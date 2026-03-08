@@ -1,0 +1,19 @@
+{
+  "name": "cosmonaut-osmium",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc --build",
+    "deploy": "node .dist/osmium",
+    "local": "npm run build && npm run deploy"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "discord.js": "^14.25.1",
+    "typescript": "^5.9.3"
+  }
+}
