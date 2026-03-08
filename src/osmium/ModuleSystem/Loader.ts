@@ -20,6 +20,8 @@ export default class ModuleLoader {
 	
 	constructGuild(guild: Guild, client: Client<true>) {
 		console.groupCollapsed(`Guild construction for ${guild.id}`)
+		guild.commands.set([])
+		console.log("Cleared commands for guild")
 		const moduleArray: Module[] = []
 		this.matrix[guild.id] = moduleArray
 		this.moduleTypes.forEach(module => {
