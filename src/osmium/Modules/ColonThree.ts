@@ -4,10 +4,12 @@ import Module from "../ModuleSystem/Module";
 export default class ColonThree extends Module {
 	static readonly friendlyName: string = ":3"
 
-
-	messageCreate(message: Message, bot: boolean, fromSelf: boolean): void {
+	async messageCreate(message: Message, bot: boolean, fromSelf: boolean, mentioningSelf: boolean): Promise<void> {
 		if (fromSelf) return
-		if (message.content === `<@${this.guild.client.user.id}> :3`)
-			message.reply(":3")
+		if (
+			(message.content === `<@${this.guild.client.user.id}> :3`) ||
+			(message.content === ":3" && (await message.fetchReference()).author.id === this.guild.client.user.id)
+		)
+			message.reply(Math.floor((Math.random() * 100) + 1) === 100 ? ">:3c" : ":3")
 	}
 }

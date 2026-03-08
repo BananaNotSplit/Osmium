@@ -14,15 +14,20 @@ type CommandConfig<T extends "slash" | "userContextMenu"> = {
 export default abstract class Module {
 	guild: Guild
 
-	messageCreate(message: Message, bot: boolean, fromSelf: boolean) { }
+	messageCreate(message: Message, bot: boolean, fromSelf: boolean, mentioningSelf: boolean) { }
 
 	constructor(guild: Guild, client: Client<true>) {
 		this.guild = guild
 		console.info(`Initializing module ${this.constructor.name}`)
 
-		client.addListener(Events.MessageCreate, message => {
+		client.addListener(Events.MessageCreate, (message: Message) => {
 			if (message.guildId !== guild.id) return
-			this.messageCreate(message, message.author.bot, message.author === this.guild.client.user)
+			this.messageCreate(
+				message,
+				message.author.bot,
+				message.author === this.guild.client.user,
+				message.mentions.has(this.guild.client.user)
+			)
 		})
 
 		this.setupCommands()
