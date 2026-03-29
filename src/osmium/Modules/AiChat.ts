@@ -392,6 +392,7 @@ ${chat.aiCharacterPrompt}
 				.addStringOption((option) => option
 					.setName("message")
 					.setDescription("The message contents. Use \"\\n\" for a newline.")
+					.setRequired(true)
 				)
 			)
 			.addSubcommandGroup((group) => group
