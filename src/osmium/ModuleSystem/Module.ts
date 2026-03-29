@@ -1,8 +1,8 @@
-import { ChatInputCommandInteraction, Client, ContextMenuCommandBuilder, Events, Guild, Interaction, Message, SlashCommandBuilder, User, UserContextMenuCommandInteraction } from "discord.js"
+import { ChatInputCommandInteraction, Client, ContextMenuCommandBuilder, Events, Guild, Interaction, Message, SlashCommandBuilder, SlashCommandSubcommandsOnlyBuilder, User, UserContextMenuCommandInteraction } from "discord.js"
 
 type CommandConfig<T extends "slash" | "userContextMenu"> = {
     slash: {
-        info: SlashCommandBuilder,
+        info: SlashCommandBuilder|SlashCommandSubcommandsOnlyBuilder,
         method: (interaction: ChatInputCommandInteraction) => void
     },
     userContextMenu: {
