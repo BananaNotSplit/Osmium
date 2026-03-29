@@ -227,7 +227,7 @@ ${chat.aiCharacterPrompt}
 				flags: [ "Ephemeral" ]
 			})
 		} else if (subcommand === "user") {
-			chat.aiCharacterPrompt = interaction.options.getString("description", true).replaceAll("\\n", "\n")
+			chat.userCharacterPrompt = interaction.options.getString("description", true).replaceAll("\\n", "\n")
 			interaction.reply({
 				content: "Updated user character description.",
 				flags: [ "Ephemeral" ]
