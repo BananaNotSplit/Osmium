@@ -121,7 +121,8 @@ async function main() {
 			})
 		}
 
-		await loggingChannel.send({
+		try {
+			await loggingChannel.send({
 			components: [{
 				type: ComponentType.Container,
 				components: components,
@@ -129,6 +130,10 @@ async function main() {
 			}],
 			flags: [ "IsComponentsV2" ]
 		})
+		} catch(err) {
+			console.error("Failed to log in Discord:", err)
+		}
+
   		// Optionally: gracefully shut down instead of silently continuing
 		console.group("Unexpected shutdown")
 		loader.cleanup(client)
@@ -140,9 +145,29 @@ async function main() {
 		truthfulClient.user.setActivity({ name: `Osmium - Modules: ${loader.moduleTypes.length}`, type: ActivityType.Custom})
 		loader.startup(truthfulClient)
 		const channel = await truthfulClient.channels.fetch(data.logChannel)
+		if (!channel) {
+			throw Error("Failed to get logging channel!")
+		}
 		if (channel?.isSendable()) {
 			loggingChannel = channel
 		}
+		await loggingChannel.send({
+			components: [{
+				type: ComponentType.Container,
+				components: [
+					{
+						type: ComponentType.TextDisplay,
+						content: "# Startup"
+					},
+					{
+						type: ComponentType.TextDisplay,
+						content: `Successfully set up ${loader.moduleTypes.length} module(s)`
+					}
+				],
+				accent_color: 0x30bb51
+			}],
+			flags: [ "IsComponentsV2" ]
+		})
 	})
 
 	await client.login(data.token)
