@@ -55,6 +55,12 @@ async function main() {
 	console.log(`Loading ${loader.moduleTypes.length} modules`)
 	const client = new Client({ intents: [loader.requiredIntents()] })
 
+	process.on("SIGINT", () => {
+		console.group("Shutdown")
+		loader.cleanup(client)
+		process.exit(0)
+	})
+
 	client.on(Events.ClientReady, (truthfulClient) => {
 		truthfulClient.user.setActivity({ name: `Osmium - Modules: ${loader.moduleTypes.length}`, type: ActivityType.Custom})
 		loader.startup(truthfulClient)
