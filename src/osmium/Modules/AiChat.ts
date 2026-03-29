@@ -194,7 +194,7 @@ ${chat.aiCharacterPrompt}
 				flags: [ "Ephemeral" ]
 			})
 		} else if (subcommand === "set") {
-			chat.systemPrompt = interaction.options.getString("prompt", true)
+			chat.systemPrompt = interaction.options.getString("prompt", true).replaceAll("\\n", "\n")
 			interaction.reply({
 				content: "Updated system prompt!",
 				flags: [ "Ephemeral" ]
