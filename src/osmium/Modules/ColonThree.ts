@@ -6,10 +6,7 @@ export default class ColonThree extends Module {
 
 	async messageCreate(message: Message, bot: boolean, fromSelf: boolean, mentioningSelf: boolean): Promise<void> {
 		if (fromSelf) return
-		if (
-			(message.content === `<@${this.guild.client.user.id}> :3`) ||
-			(message.content === ":3" && (await message.fetchReference()).author.id === this.guild.client.user.id)
-		)
+		if (message.content === ":3")
 			message.reply(Math.floor((Math.random() * 100) + 1) === 100 ? ">:3c" : ":3")
 	}
 }
