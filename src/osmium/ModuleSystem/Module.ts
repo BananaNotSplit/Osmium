@@ -43,6 +43,7 @@ export default abstract class Module {
 		this.guild.client.application.commands.create(info, this.guild.id)
 		.then(command => {
 			this.guild.client.on(Events.InteractionCreate, interaction => {
+				if (interaction.guildId !== this.guild.id) return // skip other guilds
 				//@ts-ignore fuck it we ball
 				if (interaction.commandName !== command.name) return //skip other commands
 				if (interaction.isUserContextMenuCommand() && type === "userContextMenu") {
