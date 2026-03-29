@@ -2,11 +2,12 @@ import ModuleLoader from "./ModuleSystem/Loader";
 import { readdirSync } from "fs";
 import { join } from "path";
 import ModuleImplementation from "./ModuleSystem/Implementation";
-import { ActivityType, Client, Events } from "discord.js";
+import { ActivityType, Client, ComponentType, Events, SendableChannels } from "discord.js";
 
 interface GlobalConfig {
 	token: string
 	modules?: string[]
+	logChannel: string
 }
 
 const data = require("../../data/global.json") as GlobalConfig
@@ -54,16 +55,94 @@ async function main() {
 	await loadModules()
 	console.log(`Loading ${loader.moduleTypes.length} modules`)
 	const client = new Client({ intents: [loader.requiredIntents()] })
+	let loggingChannel: SendableChannels
 
-	process.on("SIGINT", () => {
+	process.on("SIGINT", async () => {
+		await loggingChannel.send({
+			components: [{
+				type: ComponentType.Container,
+				components: [
+					{
+						type: ComponentType.TextDisplay,
+						content: "# Shutdown"
+					},
+					{
+						type: ComponentType.TextDisplay,
+						content: "Node.JS recieved a shutdown signal."
+					}
+				],
+				accent_color: 0xbb5130
+			}],
+			flags: [ "IsComponentsV2" ]
+		})
 		console.group("Shutdown")
 		loader.cleanup(client)
 		process.exit(0)
 	})
 
-	client.on(Events.ClientReady, (truthfulClient) => {
+	process.on('uncaughtException', async (err) => {
+		console.error('Uncaught exception:', err)
+		let components: {
+    		type: ComponentType.TextDisplay;
+    		content: string;
+		}[] = [
+			{
+				type: ComponentType.TextDisplay,
+				content: "# Shutdown"
+			},
+			{
+				type: ComponentType.TextDisplay,
+				content: "Critical error encountered"
+			},
+			{
+				type: ComponentType.TextDisplay,
+				content: "## Type"
+			},
+			{
+				type: ComponentType.TextDisplay,
+				content: err.name ?? "Unknown Error"
+			},
+			{
+				type: ComponentType.TextDisplay,
+				content: "## Message"
+			},
+			{
+				type: ComponentType.TextDisplay,
+				content: err.message ?? "No Error Description"
+			}
+		]
+		if (err.stack) {
+			components.push({
+				type: ComponentType.TextDisplay,
+				content: "## Stack Trace"
+			}, {
+				type: ComponentType.TextDisplay,
+				content: err.stack
+			})
+		}
+
+		await loggingChannel.send({
+			components: [{
+				type: ComponentType.Container,
+				components: components,
+				accent_color: 0xbb5130
+			}],
+			flags: [ "IsComponentsV2" ]
+		})
+  		// Optionally: gracefully shut down instead of silently continuing
+		console.group("Unexpected shutdown")
+		loader.cleanup(client)
+		process.exit(1)
+	})
+
+
+	client.on(Events.ClientReady, async (truthfulClient) => {
 		truthfulClient.user.setActivity({ name: `Osmium - Modules: ${loader.moduleTypes.length}`, type: ActivityType.Custom})
 		loader.startup(truthfulClient)
+		const channel = await truthfulClient.channels.fetch(data.logChannel)
+		if (channel?.isSendable()) {
+			loggingChannel = channel
+		}
 	})
 
 	await client.login(data.token)
