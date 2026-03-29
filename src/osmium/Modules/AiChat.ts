@@ -37,7 +37,7 @@ export default class AiChat extends EntangledModule<Config> {
 	static readonly intents = [GatewayIntentBits.MessageContent]
 	newData(): Config {
 		return {
-			url: { baseUrl: "http://localhost:1234", apikey: "lmstudio" },
+			url: { baseUrl: "http://localhost:1234"},
 			chats: {}
 		}
 	}
