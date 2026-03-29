@@ -4,13 +4,23 @@ import { join } from "path";
 import ModuleImplementation from "./ModuleSystem/Implementation";
 import { ActivityType, Client, Events } from "discord.js";
 
-const data = require("../../data/global.json") as { token: string }
+interface GlobalConfig {
+	token: string
+	modules?: string[]
+}
+
+const data = require("../../data/global.json") as GlobalConfig
 const loader = new ModuleLoader()
 
 type Constructor = new (...args: any[]) => any
 
 function isvalidModule(module: Function & { prototype: any }): module is ModuleImplementation {
 	return Object.hasOwn(module, "friendlyName") //only required field for ModuleImplementation
+}
+
+function shouldLoadModule(module: ModuleImplementation): boolean {
+	if (!data.modules) return true
+	return data.modules.includes(module.friendlyName)
 }
 
 async function loadModules(modulesDir: string = join(__dirname, "Modules")) {
@@ -34,8 +44,7 @@ async function loadModules(modulesDir: string = join(__dirname, "Modules")) {
 			if (typeof module !== "function") continue
 			if (!isvalidModule(module)) continue
 
-			console.debug(module)
-			loader.use(module)
+			if (shouldLoadModule(module)) loader.use(module)
 		}
 	}
 }
