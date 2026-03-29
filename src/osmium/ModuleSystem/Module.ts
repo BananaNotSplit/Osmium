@@ -16,19 +16,26 @@ export default abstract class Module {
 
 	messageCreate(message: Message, bot: boolean, fromSelf: boolean, mentioningSelf: boolean) { }
 
-	constructor(guild: Guild, client: Client<true>) {
-		this.guild = guild
-		console.info(`Initializing module ${this.constructor.name}`)
-
-		client.addListener(Events.MessageCreate, (message: Message) => {
-			if (message.guildId !== guild.id) return
+	addressMessage(message: Message) {
+		if (message.guildId !== this.guild.id) return
+		try {
 			this.messageCreate(
 				message,
 				message.author.bot,
 				message.author === this.guild.client.user,
 				message.mentions.has(this.guild.client.user)
 			)
-		})
+		} catch(err) {
+			console.error(`Module ${this.constructor.name}.messageCreate errored:`)
+			console.error(err)
+		}
+	}
+
+	constructor(guild: Guild, client: Client<true>) {
+		this.guild = guild
+		console.info(`Initializing module ${this.constructor.name}`)
+
+		client.addListener(Events.MessageCreate, message => { this.addressMessage(message) })
 
 		this.setupCommands()
 	}
