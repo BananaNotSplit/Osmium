@@ -228,6 +228,8 @@ ${chat.aiCharacterPrompt}
 			await this.establishNewChat(interaction, interaction.options.getString("name", true))
 		} else if (subcommand === "regenerate") {
 			await this.regenerateMessage(interaction, interaction.options.getString("influence"))
+		} else if (subcommand === "speak") {
+			await this.speakAsBot(interaction, interaction.options.getString("message", true))
 		}
 	}
 
@@ -330,6 +332,27 @@ ${chat.aiCharacterPrompt}
 		}
 	}
 
+	async speakAsBot(interaction: ChatInputCommandInteraction, message: string) {
+		const chat = this.getChatForInteraction(interaction)
+		if (!chat) return
+
+		interaction.reply({
+			content: "Parsing your message...",
+			flags: [ "Ephemeral" ]
+		})
+
+		let newMessage: StoredMessage = {role: "assistant", content: message.replaceAll("\\n", "\n")} // allow the usage of newlines
+		const channel = await this.getChannel(chat.channel)
+		if (!channel) {
+			console.error(`Failed to get channel to reply in ${chat.channel}!`)
+			return
+		}
+		chat.messages.push(newMessage)
+
+		const discordMessage = await channel.send(newMessage.content)
+		newMessage.snowflake = discordMessage.id
+	}
+
 	//#endregion
 
 	constructor(guild: Guild, client: Client<true>) {
@@ -361,6 +384,14 @@ ${chat.aiCharacterPrompt}
 				.addStringOption((option) => option
 					.setName("instructions")
 					.setDescription("Optional instructions to influence the AI.")
+				)
+			)
+			.addSubcommand((subcommand) => subcommand
+				.setName("speak")
+				.setDescription("Send a message as the AI.")
+				.addStringOption((option) => option
+					.setName("message")
+					.setDescription("The message contents. Use \"\\n\" for a newline.")
 				)
 			)
 			.addSubcommandGroup((group) => group
