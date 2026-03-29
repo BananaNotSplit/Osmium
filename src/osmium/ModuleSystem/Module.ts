@@ -50,16 +50,21 @@ export default abstract class Module {
 		this.guild.client.application.commands.create(info, this.guild.id)
 		.then(command => {
 			this.guild.client.on(Events.InteractionCreate, interaction => {
-				if (interaction.guildId !== this.guild.id) return // skip other guilds
-				//@ts-ignore fuck it we ball
-				if (interaction.commandName !== command.name) return //skip other commands
-				if (interaction.isUserContextMenuCommand() && type === "userContextMenu") {
-					//@ts-ignore they are already doing something wrong if this errors
-					method.call(this, interaction, interaction.targetUser, interaction.user) // keep this context
-				}
-				if (interaction.isChatInputCommand() && type === "slash") {
-					//@ts-ignore see above
-					method.call(this, interaction)
+				try {
+					if (interaction.guildId !== this.guild.id) return // skip other guilds
+					//@ts-ignore fuck it we ball
+					if (interaction.commandName !== command.name) return //skip other commands
+					if (interaction.isUserContextMenuCommand() && type === "userContextMenu") {
+						//@ts-ignore they are already doing something wrong if this errors
+						method.call(this, interaction, interaction.targetUser, interaction.user) // keep this context
+					}
+					if (interaction.isChatInputCommand() && type === "slash") {
+						//@ts-ignore see above
+						method.call(this, interaction)
+					}
+				} catch(err) {
+					console.error(`Module ${this.constructor.name} ${type} command ${info.name} errored:`)
+					console.error(err)
 				}
 			})
 		})
