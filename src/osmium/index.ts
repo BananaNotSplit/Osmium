@@ -69,6 +69,29 @@ async function main() {
 					},
 					{
 						type: ComponentType.TextDisplay,
+						content: "Node.JS recieved a manual shutdown signal."
+					}
+				],
+				accent_color: Colors.error
+			}],
+			flags: [ "IsComponentsV2" ]
+		})
+		console.group("Shutdown")
+		loader.cleanup(client)
+		process.exit(0)
+	})
+
+	process.on("SIGTERM", async () => {
+		await loggingChannel.send({
+			components: [{
+				type: ComponentType.Container,
+				components: [
+					{
+						type: ComponentType.TextDisplay,
+						content: "# Shutdown"
+					},
+					{
+						type: ComponentType.TextDisplay,
 						content: "Node.JS recieved a shutdown signal."
 					}
 				],
