@@ -1,4 +1,5 @@
 export default {
-	error: 0xa11232,
-	success: 0x12a132
+	error: 0xe8195a,
+	success: 0x19e86c,
+	changing: 0xe8d619
 }
