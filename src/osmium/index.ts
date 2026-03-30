@@ -3,6 +3,7 @@ import { readdirSync } from "fs";
 import { join } from "path";
 import ModuleImplementation from "./ModuleSystem/Implementation";
 import { ActivityType, Client, ComponentType, Events, SendableChannels } from "discord.js";
+import Colors from "./Global/Colors";
 
 interface GlobalConfig {
 	token: string
@@ -71,7 +72,7 @@ async function main() {
 						content: "Node.JS recieved a shutdown signal."
 					}
 				],
-				accent_color: 0xbb5130
+				accent_color: Colors.error
 			}],
 			flags: [ "IsComponentsV2" ]
 		})
@@ -126,7 +127,7 @@ async function main() {
 			components: [{
 				type: ComponentType.Container,
 				components: components,
-				accent_color: 0xbb5130
+				accent_color: Colors.error
 			}],
 			flags: [ "IsComponentsV2" ]
 		})
@@ -164,7 +165,7 @@ async function main() {
 						content: `Successfully set up ${loader.moduleTypes.length} module(s)`
 					}
 				],
-				accent_color: 0x30bb51
+				accent_color: Colors.success
 			}],
 			flags: [ "IsComponentsV2" ]
 		})
