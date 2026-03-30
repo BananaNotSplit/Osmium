@@ -16,7 +16,7 @@ export default abstract class Module {
 
 	async messageCreate(message: Message, bot: boolean, fromSelf: boolean, mentioningSelf: boolean) { }
 
-	async addressMessage(message: Message) {
+	async addressMessageCreate(message: Message) {
 		if (message.guildId !== this.guild.id) return
 		try {
 			await this.messageCreate(
@@ -35,7 +35,7 @@ export default abstract class Module {
 		this.guild = guild
 		console.info(`Initializing module ${this.constructor.name}`)
 
-		client.addListener(Events.MessageCreate, message => { this.addressMessage(message) })
+		client.addListener(Events.MessageCreate, message => { this.addressMessageCreate(message) })
 
 		this.setupCommands()
 	}
