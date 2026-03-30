@@ -1,4 +1,6 @@
-import { ChatInputCommandInteraction, Client, ContextMenuCommandBuilder, Events, Guild, Interaction, Message, SlashCommandBuilder, SlashCommandSubcommandsOnlyBuilder, User, UserContextMenuCommandInteraction } from "discord.js"
+import { ApplicationCommandData, ApplicationCommandOptionData, ApplicationCommandOptionType, ChatInputCommandInteraction, Client, ContextMenuCommandBuilder, Events, Guild, Message, SlashCommandBuilder, SlashCommandSubcommandsOnlyBuilder, User, UserContextMenuCommandInteraction } from "discord.js"
+import ModuleImplementation from "./Implementation"
+import { ArguementTypeToOptionType, ArgumentToOption, Command } from "./CommandDetails"
 
 type CommandConfig<T extends "slash" | "userContextMenu"> = {
     slash: {
@@ -10,6 +12,10 @@ type CommandConfig<T extends "slash" | "userContextMenu"> = {
         method: (interaction: UserContextMenuCommandInteraction, target: User, source: User) => void
     }
 }[T]
+
+function isFunction<T>(value: any): value is Function {
+	return typeof value === "function"
+}
 
 export default abstract class Module {
 	guild: Guild
@@ -70,7 +76,89 @@ export default abstract class Module {
 		})
 	}
 
-	setupCommands(): void { }
+	async setupCommands() {
+		const info = this.constructor as ModuleImplementation
+		const commands = info.commands
+		if (!commands) return
+
+		let subcommands: ApplicationCommandOptionData[] = []
+		let mappedSubcommands: {[id: string]: Command} = {}
+
+		commands.commands.forEach(command => {
+			subcommands.push({
+				type: ApplicationCommandOptionType.Subcommand,
+				name: command.name.toLowerCase(),
+				description: command.description,
+				options: (command.arguments ?? []).map(argument => ArgumentToOption(argument))
+			})
+			mappedSubcommands[command.name.toLowerCase()] = command
+		})
+
+		let data: ApplicationCommandData = {
+			name: commands.commandName,
+			description: info.description ?? "Module has no description.",
+			options: subcommands
+		}
+
+		const command = await this.guild.commands.create(data)
+		this.guild.client.on(Events.InteractionCreate, (interaction) => {
+			if (interaction.guildId !== this.guild.id) return // don't process other guilds
+			if (interaction.isChatInputCommand()) {
+				if (interaction.commandName !== commands.commandName) return // validate it is our command
+				const subcommand = interaction.options.getSubcommand()
+				const commandObject = mappedSubcommands[subcommand]
+
+				if (!commandObject) {
+					console.error(`Processed a command /${interaction.commandName} ${subcommand}, but that subcommand doesn't exist!`)
+					return
+				}
+
+				console.log(`Calling /${interaction.commandName} ${subcommand}`)
+
+				const functionName = commandObject.function as keyof this
+				console.log(`function name is "${functionName.toString()}"`)
+				const callable = this[functionName]
+				if (!callable) {
+					console.error(`Processed a command /${interaction.commandName} ${subcommand}, but that function doesn't exist!`)
+					return
+				}
+				if (typeof callable !== "function") {
+					console.error(`Processed a command /${interaction.commandName} ${subcommand}, but that is not a function!`)
+					return
+				}
+
+				let arg: any[]|undefined
+				if (commandObject.arguments) {
+					arg = commandObject.arguments.map(argument => {
+						switch (argument.type) {
+						case "bool":
+							return interaction.options.getBoolean(argument.name, argument.required)
+						case "channel":
+							return interaction.options.getChannel(argument.name, argument.required)
+						case "int":
+							return interaction.options.getInteger(argument.name, argument.required)
+						case "mention":
+							return interaction.options.getMentionable(argument.name, argument.required)
+						case "number":
+							return interaction.options.getNumber(argument.name, argument.required)
+						case "string":
+							return interaction.options.getString(argument.name, argument.required)
+						case "user":
+							return interaction.options.getUser(argument.name, argument.required)
+						case "role":
+							return interaction.options.getRole(argument.name, argument.required)
+						}
+					})
+				}
+
+				if (arg) {
+					callable.call(this, interaction, ...arg)
+				} else {
+					callable.call(this, interaction)
+				}
+			}
+		})
+	}
 
 	cleanup(): void { }
 }
