@@ -173,7 +173,8 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 	async generateMessage(chat: LiveChat, prompt?: string): Promise<string> {
 		const apiResult = await this.aiClient.chat.completions.create({
 			model: this.data.model,
-			messages: chat.messages
+			messages: chat.messages,
+			stop: "\n"
 		})
 		const messageInfo = apiResult.choices[0]
 		if (!messageInfo)
