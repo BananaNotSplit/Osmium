@@ -1,4 +1,4 @@
-import { ChannelType, ChatInputCommandInteraction, Client, ComponentType, GatewayIntentBits, Guild, Message, RepliableInteraction, SendableChannels, Snowflake, TextChannel } from "discord.js";
+import { ChannelType, ChatInputCommandInteraction, Client, ComponentType, GatewayIntentBits, Guild, InteractionResponse, Message, RepliableInteraction, SendableChannels, Snowflake, TextChannel } from "discord.js";
 import AiChatConfig, { LiveChat, StoredChat } from "../AiChatCore";
 import EntangledModule from "../ModuleSystem/EntangledModule";
 import OpenAI from "openai";
@@ -31,6 +31,17 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 					name: "name",
 					description: "The name of the chat.",
 					required: true
+				}]
+			},
+			{
+				name: "regenerate",
+				description: "Regenerates the AIs last message.",
+				function: "regenerateMessage",
+				arguments: [{
+					type: "string",
+					name: "prompt",
+					description: "The prompt to influence the AI..",
+					required: false
 				}]
 			}
 		],
@@ -85,20 +96,29 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 	aiClient: OpenAI
 
 	async replyWithContainedMessage(interaction: RepliableInteraction, message: string, color: number, ephemeral: boolean = false) {
-		interaction.reply({
-			components: [
-				{
-					type: ComponentType.Container,
-					components: [
-						{
-							type: ComponentType.TextDisplay,
-							content: message
-						}
-					],
-					accent_color: color
-				}
-			],
+		return await interaction.reply({
+			components: [{
+				type: ComponentType.Container,
+				components: [{
+					type: ComponentType.TextDisplay,
+					content: message
+				}],
+				accent_color: color
+			}],
 			flags: ephemeral ? [ "Ephemeral", "IsComponentsV2" ] : [ "IsComponentsV2" ]
+		})
+	}
+
+	async editReplyWithContainedMessage(interaction: InteractionResponse, message: string, color: number) {
+		return await interaction.edit({
+			components: [{
+				type: ComponentType.Container,
+				components: [{
+					type: ComponentType.TextDisplay,
+					content: message
+				}],
+				accent_color: color
+			}]
 		})
 	}
 
@@ -246,6 +266,33 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 		}
 		liveChat.userDescription = description
 		this.replyWithContainedMessage(interaction, "Done! user description updated.", Colors.success, true)
+	}
+
+	async regenerateMessage(interaction: ChatInputCommandInteraction, prompt?: string) {
+		const liveChat = this.liveChats[interaction.channelId]
+		if (!liveChat) {
+			this.replyWithContainedMessage(interaction, "This command can only be ran in a chat.", Colors.error, true)
+			return
+		}
+		const messageInfo = liveChat.messages.pop()
+		if (!messageInfo) {
+			this.replyWithContainedMessage(interaction, "There is no message to regenerate.", Colors.error, true)
+			return
+		}
+		if (messageInfo.role === "user") {
+			this.replyWithContainedMessage(interaction, "Only AI messages can be regenerated.", Colors.error, true)
+			liveChat.messages.push(messageInfo)
+			return
+		}
+		const channel = await liveChat.getChannel(this.discordClient)
+		if (messageInfo.snowflake) {
+			const message = await channel.messages.fetch(messageInfo.snowflake)
+			message.delete()
+		}
+		const interactionResponse = await this.replyWithContainedMessage(interaction, "Regenerating...", Colors.changing, true)
+		const generatedMessage = await this.generateMessage(liveChat, prompt)
+		channel.send(generatedMessage)
+		this.editReplyWithContainedMessage(interactionResponse, "Done!", Colors.success)
 	}
 
 	//#endregion
