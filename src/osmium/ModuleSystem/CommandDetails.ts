@@ -127,6 +127,15 @@ export function ArgumentToOption(argument: CommandArgument): Option {
 				maxValue: argument.maximum
 			}
 		case "int":
+			return {
+				type: ApplicationCommandOptionType.Integer,
+				name: argument.name,
+				description: argument.description,
+				required: argument.required,
+				choices: argument.options,
+				minValue: argument.minimum,
+				maxValue: argument.maximum
+			}
 		case "bool":
 			return {
 				type: ApplicationCommandOptionType.Boolean,
