@@ -392,7 +392,7 @@ ${chat.aiCharacterPrompt}
 		})
 	}
 
-	setupCommands(): void {
+	async setupCommands() {
 		this.linkCommand(
 			"slash",
 			new SlashCommandBuilder()

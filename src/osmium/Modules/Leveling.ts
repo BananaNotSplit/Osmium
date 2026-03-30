@@ -45,10 +45,10 @@ export default class Leveling extends EntangledModule<LevelingData> {
 		return false
 	}
 
-	messageCreate(message: Message, bot: boolean, fromSelf: boolean): void {
+	async messageCreate(message: Message, bot: boolean, fromSelf: boolean) {
 		if (bot && message.author.id !== "1475731698548477952") return
 		if (this.grantXP(message.author, this.data.messageXp))
-			message.reply(`You've leveled up! You are now level ${this.data.levels[message.author.id]?.level}`)
+			await message.reply(`You've leveled up! You are now level ${this.data.levels[message.author.id]?.level}`)
 	}
 
 	showInfo(interaction: UserContextMenuCommandInteraction, target: User, source: User) {
@@ -66,7 +66,7 @@ export default class Leveling extends EntangledModule<LevelingData> {
 		}
 	}
 
-	setupCommands(): void {
+	async setupCommands() {
 		this.linkCommand("userContextMenu",
 			new ContextMenuCommandBuilder()
 				.setType(ApplicationCommandType.User)

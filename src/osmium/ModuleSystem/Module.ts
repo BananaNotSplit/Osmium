@@ -14,12 +14,12 @@ type CommandConfig<T extends "slash" | "userContextMenu"> = {
 export default abstract class Module {
 	guild: Guild
 
-	messageCreate(message: Message, bot: boolean, fromSelf: boolean, mentioningSelf: boolean) { }
+	async messageCreate(message: Message, bot: boolean, fromSelf: boolean, mentioningSelf: boolean) { }
 
-	addressMessage(message: Message) {
+	async addressMessage(message: Message) {
 		if (message.guildId !== this.guild.id) return
 		try {
-			this.messageCreate(
+			await this.messageCreate(
 				message,
 				message.author.bot,
 				message.author === this.guild.client.user,
