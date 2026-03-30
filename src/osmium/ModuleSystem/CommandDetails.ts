@@ -128,6 +128,12 @@ export function ArgumentToOption(argument: CommandArgument): Option {
 			}
 		case "int":
 		case "bool":
+			return {
+				type: ApplicationCommandOptionType.Boolean,
+				name: argument.name,
+				description: argument.description,
+				required: argument.required
+			}
 		case "channel":
 		case "mention":
 		case "role":
