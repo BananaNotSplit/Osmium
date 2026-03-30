@@ -32,31 +32,40 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 					description: "The name of the chat.",
 					required: true
 				}]
-			},
-			{
-				name: "description",
-				description: "Modify a character description",
-				function: "setCharacterDescription",
-				arguments: [
-					{
-						type: "string",
-						name: "character",
-						description: "The character to modify.",
-						required: true,
-						options: [
-							{name: "AI", value: "ai"},
-							{name: "User", value: "user"}
-						]
-					},
-					{
-						type: "string",
-						name: "description",
-						description: "The new description.",
-						required: true
-					}
-				]
 			}
-		]
+		],
+		commandGroups: [{
+			name: "character",
+			description: "Manage character descriptions.",
+			commands: [
+				{
+					name: "ai",
+					description: "Update the AI character description.",
+					function: "updateAiCharacterDescription",
+					arguments: [
+						{
+							type: "string",
+							name: "description",
+							description: "The new character description.",
+							required: true
+						}
+					]
+				},
+				{
+					name: "user",
+					description: "Update the user character description.",
+					function: "updateUserCharacterDescription",
+					arguments: [
+						{
+							type: "string",
+							name: "description",
+							description: "The new character description.",
+							required: true
+						}
+					]
+				}
+			]
+		}]
 	}
 
 	newData(): AiChatConfig {
@@ -219,19 +228,24 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 		await this.replyWithContainedMessage(interaction, `Your new chat is in <#${thread.id}>`, Colors.success, true)
 	}
 
-	async setCharacterDescription(interaction: ChatInputCommandInteraction, character: "ai"|"user", description: string) {
-		const chat = this.liveChats[interaction.channelId]
-		if (!chat) {
-			await this.replyWithContainedMessage(interaction, "This command can only be ran in a chat.", Colors.error, true)
+	async updateAiCharacterDescription(interaction: ChatInputCommandInteraction, description: string) {
+		const liveChat = this.liveChats[interaction.channelId]
+		if (!liveChat) {
+			this.replyWithContainedMessage(interaction, "This command can only be ran in a chat.", Colors.error, true)
 			return
 		}
-		if (character === "ai") {
-			chat.aiDescription = description
-		} else {
-			chat.userDescription = description
-		}
+		liveChat.aiDescription = description
+		this.replyWithContainedMessage(interaction, "Done! AI description updated.", Colors.success, true)
+	}
 
-		await this.replyWithContainedMessage(interaction, "Done!", Colors.success, true)
+	async updateUserCharacterDescription(interaction: ChatInputCommandInteraction, description: string) {
+		const liveChat = this.liveChats[interaction.channelId]
+		if (!liveChat) {
+			this.replyWithContainedMessage(interaction, "This command can only be ran in a chat.", Colors.error, true)
+			return
+		}
+		liveChat.userDescription = description
+		this.replyWithContainedMessage(interaction, "Done! user description updated.", Colors.success, true)
 	}
 
 	//#endregion
