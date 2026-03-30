@@ -15,10 +15,6 @@ type CommandConfig<T extends "slash" | "userContextMenu"> = {
 
 export type DeletedMessage = OmitPartialGroupDMChannel<Message<boolean> | PartialMessage<boolean>>
 
-function isFunction<T>(value: any): value is Function {
-	return typeof value === "function"
-}
-
 export default abstract class Module {
 	guild: Guild
 
