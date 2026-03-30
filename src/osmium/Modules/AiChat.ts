@@ -173,6 +173,22 @@ ${chat.aiCharacterPrompt}
 		newMessage.snowflake = discordMessage.id
 	}
 
+	async generate(chat: StoredChat, influence?: string) {
+		let newMessage = await this.replyToChat(chat, undefined, influence)
+		if (!newMessage) {
+			console.error(`Failed to send channel to reply in ${chat.channel}!`)
+			return
+		}
+		const channel = await this.getChannel(chat.channel)
+		if (!channel) {
+			console.error(`Failed to get channel to reply in ${chat.channel}!`)
+			return
+		}
+		
+		const discordMessage = await channel.send(newMessage.content)
+		newMessage.snowflake = discordMessage.id
+	}
+
 	async messageCreate(message: Message, bot: boolean, fromSelf: boolean, mentioningSelf: boolean) {
 		if (bot) return
 		let chat = this.data.chats[message.channelId]
@@ -229,6 +245,8 @@ ${chat.aiCharacterPrompt}
 			await this.establishNewChat(interaction, interaction.options.getString("name", true))
 		} else if (subcommand === "regenerate") {
 			await this.regenerateMessage(interaction, interaction.options.getString("influence"))
+		} else if (subcommand === "generate") {
+			await this.generateMessage(interaction, interaction.options.getString("influence"))
 		} else if (subcommand === "speak") {
 			await this.speakAsBot(interaction, interaction.options.getString("message", true))
 		}
@@ -293,6 +311,16 @@ ${chat.aiCharacterPrompt}
 			flags: [ "Ephemeral" ]
 		})
 		await this.regenerate(chat, influence ?? undefined)
+	}
+
+	async generateMessage(interaction: ChatInputCommandInteraction, influence: string|null) {
+		const chat = this.getChatForInteraction(interaction)
+		if (!chat) return
+		interaction.reply({
+			content: "Generating...",
+			flags: [ "Ephemeral" ]
+		})
+		await this.generate(chat, influence ?? undefined)
 	}
 
 	async establishNewChat(interaction: ChatInputCommandInteraction, name: string) {
@@ -382,6 +410,14 @@ ${chat.aiCharacterPrompt}
 			.addSubcommand((subcommand) => subcommand
 				.setName("regenerate")
 				.setDescription("Regenerates the previous message.")
+				.addStringOption((option) => option
+					.setName("instructions")
+					.setDescription("Optional instructions to influence the AI.")
+				)
+			)
+			.addSubcommand((subcommand) => subcommand
+				.setName("generate")
+				.setDescription("Generates a new message.")
 				.addStringOption((option) => option
 					.setName("instructions")
 					.setDescription("Optional instructions to influence the AI.")
