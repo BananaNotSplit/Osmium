@@ -1,4 +1,4 @@
-import { ApplicationCommandData, ApplicationCommandOptionData, ApplicationCommandOptionType, ChatInputCommandInteraction, Client, ContextMenuCommandBuilder, Events, Guild, Message, SlashCommandBuilder, SlashCommandSubcommandsOnlyBuilder, User, UserContextMenuCommandInteraction } from "discord.js"
+import { ApplicationCommandData, ApplicationCommandOptionData, ApplicationCommandOptionType, ApplicationCommandSubCommandData, ChatInputCommandInteraction, Client, ContextMenuCommandBuilder, Events, Guild, Message, SlashCommandBuilder, SlashCommandSubcommandsOnlyBuilder, User, UserContextMenuCommandInteraction } from "discord.js"
 import ModuleImplementation from "./Implementation"
 import { ArguementTypeToOptionType, ArgumentToOption, Command } from "./CommandDetails"
 
@@ -83,6 +83,7 @@ export default abstract class Module {
 
 		let subcommands: ApplicationCommandOptionData[] = []
 		let mappedSubcommands: {[id: string]: Command} = {}
+		let mappedGroupSubcommands: {[id: string]: {[id: string]: Command}} = {}
 
 		commands.commands.forEach(command => {
 			subcommands.push({
@@ -93,6 +94,29 @@ export default abstract class Module {
 			})
 			mappedSubcommands[command.name.toLowerCase()] = command
 		})
+
+		if (commands.commandGroups) {
+			commands.commandGroups.forEach(group => {
+				mappedGroupSubcommands[group.name.toLowerCase()] = {}
+				let groupCommands: ApplicationCommandSubCommandData[] = []
+				group.commands.forEach(groupCommand => {
+					groupCommands.push({
+						type: ApplicationCommandOptionType.Subcommand,
+						name: groupCommand.name.toLowerCase(),
+						description: groupCommand.description,
+						options: (groupCommand.arguments ?? []).map(argument => ArgumentToOption(argument))
+					})
+					mappedGroupSubcommands[group.name.toLowerCase()]![groupCommand.name.toLowerCase()] = groupCommand
+				})
+
+				subcommands.push({
+					type: ApplicationCommandOptionType.SubcommandGroup,
+					name: group.name.toLowerCase(),
+					description: group.description,
+					options: groupCommands
+				})
+			})
+		}
 
 		let data: ApplicationCommandData = {
 			name: commands.commandName,
@@ -105,18 +129,16 @@ export default abstract class Module {
 			if (interaction.guildId !== this.guild.id) return // don't process other guilds
 			if (interaction.isChatInputCommand()) {
 				if (interaction.commandName !== commands.commandName) return // validate it is our command
+				const group = interaction.options.getSubcommandGroup()
 				const subcommand = interaction.options.getSubcommand()
-				const commandObject = mappedSubcommands[subcommand]
+				const commandObject = group ? mappedGroupSubcommands[group]![subcommand] : mappedSubcommands[subcommand]
 
 				if (!commandObject) {
 					console.error(`Processed a command /${interaction.commandName} ${subcommand}, but that subcommand doesn't exist!`)
 					return
 				}
 
-				console.log(`Calling /${interaction.commandName} ${subcommand}`)
-
 				const functionName = commandObject.function as keyof this
-				console.log(`function name is "${functionName.toString()}"`)
 				const callable = this[functionName]
 				if (!callable) {
 					console.error(`Processed a command /${interaction.commandName} ${subcommand}, but that function doesn't exist!`)
