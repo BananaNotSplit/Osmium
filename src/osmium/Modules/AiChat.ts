@@ -289,9 +289,12 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 			const message = await channel.messages.fetch(messageInfo.snowflake)
 			message.delete()
 		}
+
 		const interactionResponse = await this.replyWithContainedMessage(interaction, "Regenerating...", Colors.changing, true)
+
 		const generatedMessage = await this.generateMessage(liveChat, prompt)
-		channel.send(generatedMessage)
+		liveChat.sayAsAssistant(generatedMessage, this.discordClient)
+
 		this.editReplyWithContainedMessage(interactionResponse, "Done!", Colors.success)
 	}
 
