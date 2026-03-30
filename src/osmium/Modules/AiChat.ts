@@ -101,7 +101,8 @@ ${chat.aiCharacterPrompt}
 		try {
 			response = await this.client.chat.completions.create({
 				model: "dirty-muse-writer-v01-uncensored-erotica-nsfw-i1",
-				messages: messages, // we love type intersections :3
+				messages: messages, // we love type intersections :3,
+				stop: "\n"
 			});
 		} catch(err) {
 			console.error(`OpenAI API error: ${err}`)
@@ -187,7 +188,7 @@ ${chat.aiCharacterPrompt}
 			console.warn("All that for no message?")
 			return
 		}
-		const reply = await message.reply(aiMessage.content)
+		const reply = await message.channel.send(aiMessage.content)
 		aiMessage.snowflake = reply.id
 	}
 
