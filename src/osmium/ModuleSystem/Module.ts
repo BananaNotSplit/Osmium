@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, Client, ContextMenuCommandBuilder, Events, Guild, Interaction, Message, SlashCommandBuilder, SlashCommandSubcommandsOnlyBuilder, User, UserContextMenuCommandInteraction } from "discord.js"
+import { ChatInputCommandInteraction, Client, ContextMenuCommandBuilder, Events, Guild, Interaction, Message, OmitPartialGroupDMChannel, PartialMessage, SlashCommandBuilder, SlashCommandSubcommandsOnlyBuilder, User, UserContextMenuCommandInteraction } from "discord.js"
 
 type CommandConfig<T extends "slash" | "userContextMenu"> = {
     slash: {
@@ -10,6 +10,8 @@ type CommandConfig<T extends "slash" | "userContextMenu"> = {
         method: (interaction: UserContextMenuCommandInteraction, target: User, source: User) => void
     }
 }[T]
+
+export type DeletedMessage = OmitPartialGroupDMChannel<Message<boolean> | PartialMessage<boolean>>
 
 export default abstract class Module {
 	guild: Guild
@@ -31,11 +33,29 @@ export default abstract class Module {
 		}
 	}
 
+	async messageDelete(message: DeletedMessage, bot: boolean|undefined, fromSelf: boolean, mentioningSelf: boolean) { }
+
+	async addressMessageDete(message: DeletedMessage) {
+		if (message.guildId !== this.guild.id) return
+		try {
+			await this.messageDelete(
+				message,
+				message.author?.bot,
+				message.author?.id === this.guild.client.user.id,
+				message.mentions.has(this.guild.client.user)
+			)
+		} catch(err) {
+			console.error(`Module ${this.constructor.name}.messageDelete errored:`)
+			console.error(err)
+		}
+	}
+
 	constructor(guild: Guild, client: Client<true>) {
 		this.guild = guild
 		console.info(`Initializing module ${this.constructor.name}`)
 
-		client.addListener(Events.MessageCreate, message => { this.addressMessageCreate(message) })
+		client.on(Events.MessageCreate, message => this.addressMessageCreate(message))
+		client.on(Events.MessageDelete, message => this.addressMessageDete(message))
 
 		this.setupCommands()
 	}
