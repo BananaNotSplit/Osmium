@@ -116,6 +116,7 @@ export function ArgumentToOption(argument: CommandArgument): Option {
 		case "mention":
 		case "role":
 		case "user":
+		default:
 			throw "Not Implemented"
 	}
 }
