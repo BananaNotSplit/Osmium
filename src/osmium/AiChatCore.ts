@@ -1,7 +1,7 @@
 import { Client, SendableChannels, Snowflake } from "discord.js";
 import EntangledModule from "./ModuleSystem/EntangledModule";
 
-class ChatError extends Error {
+export class ChatError extends Error {
 	static readonly channelNotSendable: ChatError = new ChatError("The channel for an AI chat is not sendable.", "ChannelNotSendable")
 	static readonly invalidChannel: ChatError = new ChatError("The channel for an AI chat could not be fetched.", "InvalidChannel")
 	static readonly messageTooBig: ChatError = new ChatError("The message to send as the AI was over 2,000 characters.", "MessageTooBig")
@@ -13,13 +13,13 @@ class ChatError extends Error {
 
 type MessageRole = "assistant" | "user"
 
-interface Message {
+export interface Message {
 	role: MessageRole
 	content: string
 	snowflake: Snowflake|null
 }
 
-interface StoredChat {
+export interface StoredChat {
 	channel: Snowflake
 	userDescription: string
 	aiDescription: string
@@ -27,7 +27,7 @@ interface StoredChat {
 	messages: Message[]
 }
 
-class LiveChat {
+export class LiveChat {
 	chat: StoredChat
 
 	//#region Property Accessors
@@ -84,6 +84,14 @@ class LiveChat {
 		await message.delete()
 
 		return messageInfo.role
+	}
+
+	async getMessageById(id: Snowflake): Promise<[Message, number]|null> {
+		this.messages.forEach((message, index) => {
+			if (message.snowflake === id)
+				return [message, index]
+		})
+		return null
 	}
 
 	constructor(chat: StoredChat) {
