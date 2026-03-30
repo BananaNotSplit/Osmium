@@ -106,5 +106,6 @@ interface UrlConfig {
 
 export default interface AiChatConfig {
 	url: UrlConfig
+	model: string
 	chats: StoredChat[]
 }
