@@ -44,7 +44,7 @@ interface Config {
 //#endregion
 
 export default class AiChat extends EntangledModule<Config> {
-	static readonly friendlyName = "AI Chat"
+	static readonly friendlyName = "AI Chat (Legacy)"
 	static readonly intents = [GatewayIntentBits.MessageContent]
 
 	newData(): Config {

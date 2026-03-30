@@ -1,7 +1,10 @@
-import { Client, GatewayIntentBits, Guild, Message, SendableChannels, Snowflake } from "discord.js";
+import { ChannelType, ChatInputCommandInteraction, Client, ComponentType, GatewayIntentBits, Guild, Message, RepliableInteraction, SendableChannels, Snowflake, TextChannel } from "discord.js";
 import AiChatConfig, { LiveChat, StoredChat } from "../AiChatCore";
 import EntangledModule from "../ModuleSystem/EntangledModule";
 import OpenAI from "openai";
+import ModuleCommands from "../ModuleSystem/CommandDetails";
+import Colors from "../Global/Colors";
+import { DeletedMessage } from "../ModuleSystem/Module";
 
 export class GenerationError extends Error {
 	static readonly gotNoCompletion = new GenerationError("API returned no chat completions", "GotNoCompletion.")
@@ -16,6 +19,45 @@ export class GenerationError extends Error {
 export default class AiChat extends EntangledModule<AiChatConfig> {
 	static readonly friendlyName = "AI Chat"
 	static readonly intents: GatewayIntentBits[] = [GatewayIntentBits.MessageContent]
+	static readonly commands: ModuleCommands = {
+		commandName: "chat",
+		commands: [
+			{
+				name: "create",
+				description: "Creates an AI chat thread.",
+				function: "createNamedChatThread",
+				arguments: [{
+					type: "string",
+					name: "name",
+					description: "The name of the chat.",
+					required: true
+				}]
+			},
+			{
+				name: "description",
+				description: "Modify a character description",
+				function: "setCharacterDescription",
+				arguments: [
+					{
+						type: "string",
+						name: "character",
+						description: "The character to modify.",
+						required: true,
+						options: [
+							{name: "AI", value: "ai"},
+							{name: "User", value: "user"}
+						]
+					},
+					{
+						type: "string",
+						name: "description",
+						description: "The new description.",
+						required: true
+					}
+				]
+			}
+		]
+	}
 
 	newData(): AiChatConfig {
 		return {
@@ -32,6 +74,26 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 
 	liveChats: { [channel: Snowflake]: LiveChat }
 	aiClient: OpenAI
+
+	async replyWithContainedMessage(interaction: RepliableInteraction, message: string, color: number, ephemeral: boolean = false) {
+		interaction.reply({
+			components: [
+				{
+					type: ComponentType.Container,
+					components: [
+						{
+							type: ComponentType.TextDisplay,
+							content: message
+						}
+					],
+					accent_color: color
+				}
+			],
+			flags: ephemeral ? [ "Ephemeral", "IsComponentsV2" ] : [ "IsComponentsV2" ]
+		})
+	}
+
+	//#region Methods
 
 	load(): ["failed", any] | ["ok" | "new", AiChatConfig] {
 		const result = super.load()
@@ -50,6 +112,8 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 		}
 		this.data.chats.push(newChat)
 		this.liveChats[channel.id] = new LiveChat(newChat)
+
+		console.log("Added a new chat channel.")
 	}
 
 	/**
@@ -98,6 +162,10 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 		return await this.sendMessage(chat, text)
 	}
 
+	//#endregion
+
+	//#region Events & Commands
+
 	async messageCreate(message: Message, bot: boolean, fromSelf: boolean, mentioningSelf: boolean) {
 		if (fromSelf) return
 		const liveChat = this.liveChats[message.channelId]
@@ -110,6 +178,63 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 
 		await this.replyToChat(liveChat)
 	}
+
+	async messageDelete(message: DeletedMessage, bot: boolean | undefined, fromSelf: boolean, mentioningSelf: boolean) {
+		if (fromSelf) return
+		const liveChat = this.liveChats[message.channelId]
+		if (!liveChat) return
+		const index = liveChat.messages.findIndex(item => item.snowflake === message.id)
+		if (index === -1) {
+			console.warn("A message was deleted in a live chat, but that message is not in the history!")
+			return
+		}
+		liveChat.messages.splice(index, 1)
+	}
+
+	async createNamedChatThread(interaction: ChatInputCommandInteraction, name: string) {
+		if (this.liveChats[interaction.channelId]) {
+			await this.replyWithContainedMessage(interaction, "There is already a chat here!", Colors.error, true)
+			return
+		}
+		if (!interaction.channel) {
+			await this.replyWithContainedMessage(interaction, "You have to run this command in a channel.", Colors.error, true)
+			return
+		}
+		if (!interaction.channel.isSendable()) {
+			await this.replyWithContainedMessage(interaction, "I don't have permission to make a thread here.", Colors.error, true)
+			return
+		}
+
+		if (!(interaction.channel instanceof TextChannel)) {
+			await this.replyWithContainedMessage(interaction, "I can only make chats in text channels.", Colors.error, true)
+			return
+		}
+
+		const thread = await interaction.channel.threads.create({
+			type: ChannelType.PrivateThread,
+			name: name
+		})
+		this.createChat(thread)
+
+		await this.replyWithContainedMessage(interaction, `Your new chat is in <#${thread.id}>`, Colors.success, true)
+	}
+
+	async setCharacterDescription(interaction: ChatInputCommandInteraction, character: "ai"|"user", description: string) {
+		const chat = this.liveChats[interaction.channelId]
+		if (!chat) {
+			await this.replyWithContainedMessage(interaction, "This command can only be ran in a chat.", Colors.error, true)
+			return
+		}
+		if (character === "ai") {
+			chat.aiDescription = description
+		} else {
+			chat.userDescription = description
+		}
+
+		await this.replyWithContainedMessage(interaction, "Done!", Colors.success, true)
+	}
+
+	//#endregion
 
 	constructor(guild: Guild, client: Client<true>) {
 		super(guild, client)
