@@ -83,11 +83,11 @@ ${chat.aiCharacterPrompt}
 	}
 
 	async replyToChat(chat: StoredChat, asUser: boolean = false, influence?: string): Promise<StoredMessage|undefined> {
-		console.group(`AI Reply: ${chat.channel}`)
+		console.log(`AI is replying to chat in channel ${chat.channel}`)
 		let messages: StoredMessage[] = [{
 			role: "system",
 			content: this.createSystemMessage(chat)
-		}, ...chat.messages]
+		}, ...chat.messages.slice(-10)]
 
 		if (asUser) {
 			messages.push({role: "system", content: "Act as the user."})
@@ -106,13 +106,11 @@ ${chat.aiCharacterPrompt}
 			});
 		} catch(err) {
 			console.error(`OpenAI API error: ${err}`)
-			console.groupEnd()
 			return
 		}
 
 		if (!response.choices?.length) {
       	console.error("OpenAI API returned no choices:", response)
-			console.groupEnd()
       	return
     	}
 
@@ -120,7 +118,6 @@ ${chat.aiCharacterPrompt}
 
 		if (!message) {
 			console.error("OpenAI API responded with a completion that had no 0th message!")
-			console.groupEnd()
 			return
 		}
 
@@ -128,7 +125,6 @@ ${chat.aiCharacterPrompt}
 
 		if (!messageContent) {
 			console.error("OpenAI API responded with a completion that had a 0th message, but it was empty!")
-			console.groupEnd()
 			return
 		}
 
@@ -140,7 +136,6 @@ ${chat.aiCharacterPrompt}
 
 		chat.messages.push(aiMessage)
 		console.log("OK! Generation complete.")
-		console.groupEnd()
 		return aiMessage
 	}
 
@@ -249,6 +244,8 @@ ${chat.aiCharacterPrompt}
 			await this.generateMessage(interaction, interaction.options.getString("influence"))
 		} else if (subcommand === "speak") {
 			await this.speakAsBot(interaction, interaction.options.getString("message", true))
+		} else if (subcommand === "delete") {
+			await this.deleteLastMessage(interaction)
 		}
 	}
 
@@ -382,6 +379,39 @@ ${chat.aiCharacterPrompt}
 		newMessage.snowflake = discordMessage.id
 	}
 
+	async deleteLastMessage(interaction: ChatInputCommandInteraction) {
+		const chat = this.getChatForInteraction(interaction)
+		if (!chat) return
+
+		interaction.reply({
+			content: "Deleting message...",
+			flags: [ "Ephemeral" ]
+		})
+
+		const lastMessage = chat.messages.at(-1)
+		if (!lastMessage) {
+			interaction.editReply({
+				content: "No message to delete!"
+			})
+			return
+		}
+		const snowflake = lastMessage.snowflake
+		if (!snowflake) {
+			interaction.editReply({
+				content: "No message to delete!"
+			})
+			return
+		}
+		const channel = await this.getChannel(chat.channel)
+		if (!channel) {
+			throw Error("A chat had a snowflaked message, but not a valid channel!")
+		}
+		await (await channel.messages.fetch(snowflake)).delete()
+		interaction.editReply({
+			content: "Done!"
+		})
+	}
+
 	//#endregion
 
 	constructor(guild: Guild, client: Client<true>) {
@@ -422,6 +452,10 @@ ${chat.aiCharacterPrompt}
 					.setName("instructions")
 					.setDescription("Optional instructions to influence the AI.")
 				)
+			)
+			.addSubcommand((subcommand) => subcommand
+				.setName("delete")
+				.setDescription("Deletes the previous message.")
 			)
 			.addSubcommand((subcommand) => subcommand
 				.setName("speak")
