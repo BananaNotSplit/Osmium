@@ -4,6 +4,11 @@ type Optional<T> = T|undefined
 
 //#region Arguments
 
+export interface GenericOption<T> {
+	name: string
+	value: T
+}
+
 export interface GenericArgument<T extends string> {
 	type: T
 	name: string
@@ -12,29 +17,29 @@ export interface GenericArgument<T extends string> {
 }
 
 export interface StringArgument extends GenericArgument<"string"> {
-	options?: Optional<string[]>
-	minimumLength?: Optional<number>
-	maximumLength?: Optional<number>
+	options?: GenericOption<string>[]
+	minimumLength?: number
+	maximumLength?: number
 }
 
 export interface IntArgument extends GenericArgument<"int"> {
-	options?: Optional<number[]>
-	minimum?: Optional<number>
-	maximum?: Optional<number>
+	options?: GenericOption<number>[]
+	minimum?: number
+	maximum?: number
 }
 
 export interface BoolArgument extends GenericArgument<"bool"> { }
 
 export interface ChannelArgument extends GenericArgument<"channel"> {
-	channelType?: Optional<ChannelType>
+	channelType?: ChannelType
 }
 
 export interface MentionArgument extends GenericArgument<"mention"> { }
 
 export interface NumberArgument extends GenericArgument<"number"> {
-	options?: Optional<number[]>
-	minimum?: Optional<number>
-	maximum?: Optional<number>
+	options?: GenericOption<number>[]
+	minimum?: number
+	maximum?: number
 }
 
 export interface RoleArgument extends GenericArgument<"role"> {
@@ -107,9 +112,20 @@ export function ArgumentToOption(argument: CommandArgument): Option {
 				name: argument.name,
 				description: argument.description,
 				required: argument.required,
-				choices: (argument.options ?? []).map(option => {return {name: option, value: option}})
+				choices: argument.options,
+				minLength: argument.minimumLength,
+				maxLength: argument.maximumLength
 			}
 		case "number":
+			return {
+				type: ApplicationCommandOptionType.Number,
+				name: argument.name,
+				description: argument.description,
+				required: argument.required,
+				choices: argument.options,
+				minValue: argument.minimum,
+				maxValue: argument.maximum
+			}
 		case "int":
 		case "bool":
 		case "channel":
