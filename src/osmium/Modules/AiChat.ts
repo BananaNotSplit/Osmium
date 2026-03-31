@@ -1,5 +1,5 @@
-import { ChannelType, ChatInputCommandInteraction, Client, ComponentType, GatewayIntentBits, Guild, InteractionResponse, Message, RepliableInteraction, SendableChannels, Snowflake, TextChannel } from "discord.js";
-import AiChatConfig, { LiveChat, StoredChat } from "../AiChatCore";
+import { ChannelType, ChatInputCommandInteraction, Client, ComponentType, GatewayIntentBits, Guild, InteractionResponse, Message as DiscordMessage, RepliableInteraction, SendableChannels, Snowflake, TextChannel } from "discord.js";
+import AiChatConfig, { LiveChat, Message, StoredChat } from "../AiChatCore";
 import EntangledModule from "../ModuleSystem/EntangledModule";
 import OpenAI from "openai";
 import ModuleCommands from "../ModuleSystem/CommandDetails";
@@ -86,7 +86,28 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 				apiKey: null
 			},
 			model: "",
-			chats: []
+			chats: [],
+			systemPrompt: `
+Your goal is to roleplay as your designated character.
+@{systemPrompt}
+
+# Your Description
+@{aiCharacter}
+
+# User Description
+@{userCharacter}
+`
+		}
+	}
+
+	systemMessage(chat: LiveChat): Message {
+		return {
+			role: "system",
+			content: this.data.systemPrompt
+			.replaceAll("@{systemPrompt}", chat.systemPrompt ?? "")
+			.replace("@{aiCharacter}", chat.aiDescription)
+			.replace("@{userCharacter}", chat.userDescription),
+			snowflake: null
 		}
 	}
 
@@ -144,7 +165,7 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 	 * @param message The message to send.
 	 * @returns The sent message.
 	 */
-	async sendMessage(chat: LiveChat, message: string): Promise<Message> {
+	async sendMessage(chat: LiveChat, message: string): Promise<DiscordMessage> {
 		const channel = await chat.getChannel(this.discordClient)
 		const discordMessage = await channel.send(message)
 
@@ -164,9 +185,17 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 	 * @returns The generated message.
 	 */
 	async generateMessage(chat: LiveChat, prompt?: string): Promise<string> {
+		let messages: Message[] = [this.systemMessage(chat)].concat(...chat.messages)
+		if (prompt) 
+			messages.push({
+				role: "system",
+				content: prompt,
+				snowflake: null
+			})
+		
 		const apiResult = await this.aiClient.chat.completions.create({
 			model: this.data.model,
-			messages: chat.messages,
+			messages: messages,
 			stop: "\n"
 		})
 		const messageInfo = apiResult.choices[0]
@@ -180,8 +209,29 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 		return messageContent
 	}
 
-	async replyToChat(chat: LiveChat, prompt?: string): Promise<Message> {
-		const text = await this.generateMessage(chat, prompt)
+	async replyToChat(chat: LiveChat, typing: boolean = false, prompt?: string): Promise<DiscordMessage> {
+		const channel = await chat.getChannel(this.discordClient)
+		let interval: NodeJS.Timeout|undefined = undefined
+		if (typing) {
+			console.log(`Sending typing in ${channel.id}`)
+			channel.sendTyping()
+			interval = setInterval(() => {
+				console.log(`Resending typing in ${channel.id}`)
+				channel.sendTyping()
+			}, 9000)
+		}
+
+		const text = await this.generateMessage(chat, prompt).catch(err => {
+			if (interval) 
+				clearInterval(interval)
+			throw err
+		})
+		
+		if (interval) {
+			clearInterval(interval)
+			console.log(`Stopped sending typing in ${channel.id}`)
+		}
+
 		return await this.sendMessage(chat, text)
 	}
 
@@ -189,7 +239,7 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 
 	//#region Events & Commands
 
-	async messageCreate(message: Message, bot: boolean, fromSelf: boolean, mentioningSelf: boolean) {
+	async messageCreate(message: DiscordMessage, bot: boolean, fromSelf: boolean, mentioningSelf: boolean) {
 		if (fromSelf) return
 		const liveChat = this.liveChats[message.channelId]
 		if (!liveChat) return
@@ -199,7 +249,7 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 			snowflake: message.id
 		})
 
-		await this.replyToChat(liveChat)
+		await this.replyToChat(liveChat, true, undefined)
 	}
 
 	async messageDelete(message: DeletedMessage, bot: boolean | undefined, fromSelf: boolean, mentioningSelf: boolean) {
@@ -286,8 +336,7 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 
 		const interactionResponse = await this.replyWithContainedMessage(interaction, "Regenerating...", Colors.changing, true)
 
-		const generatedMessage = await this.generateMessage(liveChat, prompt)
-		liveChat.sayAsAssistant(generatedMessage, this.discordClient)
+		await this.replyToChat(liveChat, true, prompt)
 
 		this.editReplyWithContainedMessage(interactionResponse, "Done!", Colors.success)
 	}

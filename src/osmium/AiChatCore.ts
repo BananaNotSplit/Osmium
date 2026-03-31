@@ -11,7 +11,7 @@ export class ChatError extends Error {
 	}
 }
 
-type MessageRole = "assistant" | "user"
+type MessageRole = "assistant" | "user" | "system"
 
 export interface Message {
 	role: MessageRole
@@ -108,4 +108,5 @@ export default interface AiChatConfig {
 	url: UrlConfig
 	model: string
 	chats: StoredChat[]
+	systemPrompt: string
 }
