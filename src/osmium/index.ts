@@ -59,6 +59,7 @@ async function main() {
 	let loggingChannel: SendableChannels
 
 	process.on("SIGINT", async () => {
+		client.user?.setStatus("invisible")
 		await loggingChannel.send({
 			components: [{
 				type: ComponentType.Container,
@@ -82,6 +83,7 @@ async function main() {
 	})
 
 	process.on("SIGTERM", async () => {
+		client.user?.setStatus("invisible")
 		await loggingChannel.send({
 			components: [{
 				type: ComponentType.Container,
@@ -146,6 +148,7 @@ async function main() {
 		}
 
 		try {
+			client.user?.setStatus("invisible")
 			await loggingChannel.send({
 			components: [{
 				type: ComponentType.Container,
