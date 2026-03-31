@@ -22,42 +22,36 @@ export default abstract class Module {
 
 	async addressMessageCreate(message: Message) {
 		if (message.guildId !== this.guild.id) return
-		try {
-			await this.messageCreate(
-				message,
-				message.author.bot,
-				message.author === this.guild.client.user,
-				message.mentions.has(this.guild.client.user)
-			)
-		} catch(err) {
-			console.error(`Module ${this.constructor.name}.messageCreate errored:`)
-			console.error(err)
-		}
+		await this.messageCreate(
+			message,
+			message.author.bot,
+			message.author === this.guild.client.user,
+			message.mentions.has(this.guild.client.user)
+		)
 	}
 
 	async messageDelete(message: DeletedMessage, bot: boolean|undefined, fromSelf: boolean, mentioningSelf: boolean) { }
 
-	async addressMessageDete(message: DeletedMessage) {
+	async addressMessageDelete(message: DeletedMessage) {
 		if (message.guildId !== this.guild.id) return
-		try {
-			await this.messageDelete(
-				message,
-				message.author?.bot,
-				message.author?.id === this.guild.client.user.id,
-				message.mentions.has(this.guild.client.user)
-			)
-		} catch(err) {
-			console.error(`Module ${this.constructor.name}.messageDelete errored:`)
-			console.error(err)
-		}
+		await this.messageDelete(
+			message,
+			message.author?.bot,
+			message.author?.id === this.guild.client.user.id,
+			message.mentions.has(this.guild.client.user)
+		)
 	}
 
 	constructor(guild: Guild, client: Client<true>) {
 		this.guild = guild
 		console.info(`Initializing module ${this.constructor.name}`)
 
-		client.on(Events.MessageCreate, message => this.addressMessageCreate(message))
-		client.on(Events.MessageDelete, message => this.addressMessageDete(message))
+		client.on(Events.MessageCreate, message => this.addressMessageCreate(message).catch(err => {
+			console.error(`Module ${this.constructor.name} encountered an error in messageCreate:`, err)
+		}))
+		client.on(Events.MessageDelete, message => this.addressMessageDelete(message).catch(err => {
+			console.error(`Module ${this.constructor.name} encountered an error in messageDelete:`, err)
+		}))
 
 		this.setupCommands()
 	}
@@ -189,10 +183,11 @@ export default abstract class Module {
 					})
 				}
 
-				if (arg) {
-					callable.call(this, interaction, ...arg)
-				} else {
-					callable.call(this, interaction)
+				const result = callable.call(this, interaction, ...(arg ?? []))
+				if (result instanceof Promise) {
+					result.catch(err => {
+						console.error(err)
+					})
 				}
 			}
 		})
