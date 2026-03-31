@@ -124,13 +124,6 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 
 	//#region Methods
 
-	load(): ["failed", any] | ["ok" | "new", AiChatConfig] {
-		const result = super.load()
-		return result
-	}
-
-	// An override for loading is not needed, as a LiveChat links to the chat it contains.
-
 	createChat(channel: SendableChannels) {
 		let newChat: StoredChat = {
 			channel: channel.id,
