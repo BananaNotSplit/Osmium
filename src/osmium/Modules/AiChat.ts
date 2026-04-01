@@ -40,7 +40,7 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 				arguments: [{
 					type: "string",
 					name: "prompt",
-					description: "The prompt to influence the AI..",
+					description: "The prompt to influence the AI.",
 					required: false
 				}]
 			}
@@ -57,7 +57,7 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 						{
 							type: "string",
 							name: "description",
-							description: "The new character description.",
+							description: "The new character description. Use \\n for a new line.",
 							required: true
 						}
 					]
@@ -70,7 +70,7 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 						{
 							type: "string",
 							name: "description",
-							description: "The new character description.",
+							description: "The new character description. Use \\n for a new line.",
 							required: true
 						}
 					]
@@ -310,7 +310,7 @@ Your goal is to roleplay as your designated character.
 			this.replyWithContainedMessage(interaction, "This command can only be ran in a chat.", Colors.error, true)
 			return
 		}
-		liveChat.aiDescription = description
+		liveChat.aiDescription = description.replaceAll("\\n", "\n")
 		this.replyWithContainedMessage(interaction, "Done! AI description updated.", Colors.success, true)
 	}
 
@@ -320,7 +320,7 @@ Your goal is to roleplay as your designated character.
 			this.replyWithContainedMessage(interaction, "This command can only be ran in a chat.", Colors.error, true)
 			return
 		}
-		liveChat.userDescription = description
+		liveChat.userDescription = description.replaceAll("\\n", "\n")
 		this.replyWithContainedMessage(interaction, "Done! user description updated.", Colors.success, true)
 	}
 
