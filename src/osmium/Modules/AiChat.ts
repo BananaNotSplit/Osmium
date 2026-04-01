@@ -45,38 +45,64 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 				}]
 			}
 		],
-		commandGroups: [{
-			name: "character",
-			description: "Manage character descriptions.",
-			commands: [
-				{
-					name: "ai",
-					description: "Update the AI character description.",
-					function: "updateAiCharacterDescription",
-					arguments: [
-						{
-							type: "string",
-							name: "description",
-							description: "The new character description. Use \\n for a new line.",
-							required: true
-						}
-					]
-				},
-				{
-					name: "user",
-					description: "Update the user character description.",
-					function: "updateUserCharacterDescription",
-					arguments: [
-						{
-							type: "string",
-							name: "description",
-							description: "The new character description. Use \\n for a new line.",
-							required: true
-						}
-					]
-				}
-			]
-		}]
+		commandGroups: [
+			{
+				name: "character",
+				description: "Manage character descriptions.",
+				commands: [
+					{
+						name: "ai",
+						description: "Update the AI character description.",
+						function: "updateAiCharacterDescription",
+						arguments: [
+							{
+								type: "string",
+								name: "description",
+								description: "The new character description. Use \\n for a new line.",
+								required: true
+							}
+						]
+					},
+					{
+						name: "user",
+						description: "Update the user character description.",
+						function: "updateUserCharacterDescription",
+						arguments: [
+							{
+								type: "string",
+								name: "description",
+								description: "The new character description. Use \\n for a new line.",
+								required: true
+							}
+						]
+					}
+				]
+			},
+			{
+				name: "prompt",
+				description: "Manage the system prompt.",
+				commands: [
+					{
+						name: "clear",
+						description: "Clears the system prompt.",
+						function: "clearSystemPrompt"
+					},
+					{
+						name: "set",
+						description: "Sets the system prompt.",
+						function: "setSystemPrompt",
+						arguments: [
+							{
+								type: "string",
+								name: "prompt",
+								description: "The prompt to give the AI. use \\n for a new line.",
+								required: true
+							}
+						]
+					}
+				]
+			}
+		]
 	}
 
 	newData(): AiChatConfig {
@@ -322,6 +348,26 @@ Your goal is to roleplay as your designated character.
 		}
 		liveChat.userDescription = description.replaceAll("\\n", "\n")
 		this.replyWithContainedMessage(interaction, "Done! user description updated.", Colors.success, true)
+	}
+
+	async clearSystemPrompt(interaction: ChatInputCommandInteraction) {
+		const liveChat = this.liveChats[interaction.channelId]
+		if (!liveChat) {
+			this.replyWithContainedMessage(interaction, "This command can only be ran in a chat.", Colors.error, true)
+			return
+		}
+		liveChat.systemPrompt = null
+		this.replyWithContainedMessage(interaction, "System prompt cleared.", Colors.success, true)
+	}
+
+	async setSystemPrompt(interaction: ChatInputCommandInteraction, prompt: string) {
+		const liveChat = this.liveChats[interaction.channelId]
+		if (!liveChat) {
+			this.replyWithContainedMessage(interaction, "This command can only be ran in a chat.", Colors.error, true)
+			return
+		}
+		liveChat.systemPrompt = prompt
+		this.replyWithContainedMessage(interaction, "System prompt updated.", Colors.success, true)
 	}
 
 	async regenerateMessage(interaction: ChatInputCommandInteraction, prompt?: string) {
