@@ -290,6 +290,18 @@ Your goal is to roleplay as your designated character.
 		this.createChat(thread)
 
 		await this.replyWithContainedMessage(interaction, `Your new chat is in <#${thread.id}>`, Colors.success, true)
+
+		thread.send({
+			components: [{
+				type: ComponentType.Container,
+				accent_color: Colors.success,
+				components: [{
+					type: ComponentType.TextDisplay,
+					content: `Welcome to your personal chat, <@${interaction.user.id}>!`
+				}]
+			}],
+			flags: [ "IsComponentsV2" ]
+		})
 	}
 
 	async updateAiCharacterDescription(interaction: ChatInputCommandInteraction, description: string) {
