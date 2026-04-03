@@ -211,7 +211,7 @@ Your goal is to roleplay as your designated character.
 	 * @returns The generated message.
 	 */
 	async generateMessage(chat: LiveChat, prompt?: string): Promise<string> {
-		let messages: Message[] = [this.systemMessage(chat)].concat(...chat.messages)
+		let messages: Message[] = [this.systemMessage(chat)].concat(...chat.messages.slice(-10))
 		if (prompt) 
 			messages.push({
 				role: "system",
