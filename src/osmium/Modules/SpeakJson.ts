@@ -1,7 +1,7 @@
 import Module from "../ModuleSystem/Module";
 import ModuleCommands from "../ModuleSystem/CommandDetails";
 import EntangledModule from "../ModuleSystem/EntangledModule";
-import { ChatInputCommandInteraction, ComponentType, GuildMemberRoleManager } from "discord.js";
+import { basename, ChatInputCommandInteraction, ComponentType, GuildMemberRoleManager } from "discord.js";
 import Colors from "../Global/Colors";
 
 interface Config {
@@ -28,9 +28,52 @@ export default class SpeakJson extends EntangledModule<Config> {
 			}
 		]
 	}
+	static readonly baseReplacements: {[base: string]: {[component: string]: string|number}} = {
+		"component": {
+			"actionRow": ComponentType.ActionRow,
+			"button": ComponentType.Button,
+			"channelSelect": ComponentType.ChannelSelect,
+			"checkbox": ComponentType.Checkbox,
+			"checkboxGroup": ComponentType.CheckboxGroup,
+			"container": ComponentType.Container,
+			"contentInventoryEntry": ComponentType.ContentInventoryEntry,
+			"file": ComponentType.File,
+			"fileUpload": ComponentType.FileUpload,
+			"label": ComponentType.Label,
+			"mediaGallery": ComponentType.MediaGallery,
+			"mentionableSelect": ComponentType.MentionableSelect,
+			"radioGroup": ComponentType.RadioGroup,
+			"roleSelect": ComponentType.RoleSelect,
+			"section": ComponentType.Section,
+			"separator": ComponentType.Separator,
+			"stringSelect": ComponentType.StringSelect,
+			"textDisplay": ComponentType.TextDisplay,
+			"textInput": ComponentType.TextInput,
+			"thumbnail": ComponentType.Thumbnail,
+			"userSelect": ComponentType.UserSelect
+		},
+		"color": Colors
+	}
 
 	newData(): Config {
 		return {allowedRoleIds: []}
+	}
+
+	replace(source: string) {
+		let target = source
+		Object.keys(SpeakJson.baseReplacements).forEach(key => {
+			Object.keys(SpeakJson.baseReplacements[key]!).forEach(subkey => {
+				const placeholder = `@{${key}.${subkey}}`
+				let value = SpeakJson.baseReplacements[key]![subkey]!
+				if (typeof value === "number")
+					value = value.toString()
+				console.log(`replacing ${placeholder} with ${value}`)
+
+				target = target.replaceAll(placeholder, value)
+			})
+		})
+		console.log(target)
+		return target
 	}
 
 	async speakJson(interaction: ChatInputCommandInteraction, components: string) {
@@ -87,7 +130,7 @@ export default class SpeakJson extends EntangledModule<Config> {
 		}
 
 		try {
-			const json = JSON.parse(components)
+			const json = JSON.parse(this.replace(components))
 			if (!interaction.channel)
 				throw "No Channel."
 
