@@ -1,4 +1,4 @@
-import { ChannelType, ChatInputCommandInteraction, Client, ComponentType, GatewayIntentBits, Guild, InteractionResponse, Message as DiscordMessage, RepliableInteraction, SendableChannels, Snowflake, TextChannel } from "discord.js";
+import { ChannelType, ChatInputCommandInteraction, Client, ComponentType, GatewayIntentBits, Guild, InteractionResponse, Message as DiscordMessage, RepliableInteraction, SendableChannels, Snowflake, TextChannel, User } from "discord.js";
 import AiChatConfig, { LiveChat, Message, StoredChat } from "../AiChatCore";
 import EntangledModule from "../ModuleSystem/EntangledModule";
 import OpenAI from "openai";
@@ -32,6 +32,11 @@ export default class AiChat extends EntangledModule<AiChatConfig> {
 					description: "The name of the chat.",
 					required: true
 				}]
+			},
+			{
+				name: "list",
+				description: "Lists your AI chats.",
+				function: "listChats"
 			},
 			{
 				name: "regenerate",
@@ -171,13 +176,14 @@ Your goal is to roleplay as your designated character.
 
 	//#region Methods
 
-	createChat(channel: SendableChannels) {
+	createChat(channel: SendableChannels, creator: User) {
 		let newChat: StoredChat = {
 			channel: channel.id,
 			messages: [],
 			userDescription: "",
 			aiDescription: "",
-			systemPrompt: null
+			systemPrompt: null,
+			creator: creator.id
 		}
 		this.data.chats.push(newChat)
 		this.liveChats[channel.id] = new LiveChat(newChat)
@@ -290,6 +296,16 @@ Your goal is to roleplay as your designated character.
 		liveChat.messages.splice(index, 1)
 	}
 
+	async listChats(interaction: ChatInputCommandInteraction) {
+		const response = await this.replyWithContainedMessage(interaction, "Searching...", Colors.changing, true)
+		const chats: Snowflake[] = this.data.chats.filter(chat => chat.creator === interaction.user.id).map(chat => chat.channel)
+		if (chats.length === 0) {
+			this.editReplyWithContainedMessage(response, "No chats were found.", Colors.error)
+			return
+		}
+		this.editReplyWithContainedMessage(response, `Your chats ${chats.length}:\n` + chats.map(chat => `* <#${chat}>\n`), Colors.success)
+	}
+
 	async createNamedChatThread(interaction: ChatInputCommandInteraction, name: string) {
 		if (this.liveChats[interaction.channelId]) {
 			await this.replyWithContainedMessage(interaction, "There is already a chat here!", Colors.error, true)
@@ -313,7 +329,7 @@ Your goal is to roleplay as your designated character.
 			type: ChannelType.PrivateThread,
 			name: name
 		})
-		this.createChat(thread)
+		this.createChat(thread, interaction.user)
 
 		await this.replyWithContainedMessage(interaction, `Your new chat is in <#${thread.id}>`, Colors.success, true)
 

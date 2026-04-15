@@ -24,6 +24,7 @@ export interface StoredChat {
 	userDescription: string
 	aiDescription: string
 	systemPrompt: string|null
+	creator?: Snowflake|null
 	messages: Message[]
 }
 
@@ -42,6 +43,8 @@ export class LiveChat {
 	set messages(v: Message[]) { this.chat.messages = v }
 	get channelId(): Snowflake { return this.chat.channel }
 	set channelId(v: Snowflake) { this.chat.channel = v }
+	get creator(): Snowflake|null { if (this.chat.creator === undefined) return null; return this.chat.creator }
+	set creator(v: Snowflake|null) { this.chat.creator = v }
 	
 	//#endregion
 
