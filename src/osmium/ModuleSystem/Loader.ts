@@ -41,7 +41,7 @@ export default class ModuleLoader {
 			| GatewayIntentBits.GuildMessages
 	}
 	
-	constructGuild(guild: Guild, client: Client<true>) {
+	async constructGuild(guild: Guild, client: Client<true>) {
 		console.groupCollapsed(`Guild construction for ${guild.id}`)
 		const guildConfig = this.configFile(guild.id)
 		// Creates a new array with the same contents.
@@ -62,9 +62,13 @@ export default class ModuleLoader {
 		console.log("Cleared commands for guild")
 		const moduleArray: Module[] = []
 		this.matrix[guild.id] = moduleArray
-		targetModules.forEach(module => {
-			moduleArray.push(new module(guild, client))
-		})
+		for (let i = 0; i < targetModules.length; i++) {
+			let module = targetModules[i]
+			//@ts-ignore
+			let instance: Module = new module(guild, client)
+			await instance.setupCommands()
+			moduleArray.push(instance)
+		}
 		console.groupEnd()
 	}
 	

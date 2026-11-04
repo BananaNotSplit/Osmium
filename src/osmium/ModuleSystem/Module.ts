@@ -53,7 +53,7 @@ export default abstract class Module {
 			console.error(`Module ${this.constructor.name} encountered an error in messageDelete:`, err)
 		}))
 
-		this.setupCommands()
+		// this.setupCommands()
 	}
 	protected linkCommand<T extends
 	"slash" |
