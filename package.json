@@ -16,5 +16,8 @@
     "discord.js": "^14.25.1",
     "openai": "^6.33.0",
     "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6"
   }
 }
