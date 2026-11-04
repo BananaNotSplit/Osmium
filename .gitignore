@@ -36,4 +36,4 @@ data/
 nohup.out
 
 # User plugins
-Modules/
+/Modules/
