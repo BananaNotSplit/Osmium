@@ -34,3 +34,6 @@ Thumbs.db
 # Other
 data/
 nohup.out
+
+# User plugins
+Modules/
