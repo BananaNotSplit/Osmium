@@ -4,7 +4,8 @@ import EntangledModule from "../ModuleSystem/EntangledModule";
 interface PregnancyData {
 	timers: { [id: Snowflake]: number|undefined }
 	// Maps a role to who it can't get pregnant.
-	infertile?: { [id: Snowflake]: Snowflake }
+	infertileRoleRelationships?: { [id: Snowflake]: Snowflake }
+	infertileRoles?: Snowflake[]
 }
 
 export default class Pregnancy extends EntangledModule<PregnancyData> {
@@ -16,22 +17,41 @@ export default class Pregnancy extends EntangledModule<PregnancyData> {
 		}
 	}
 
-	async canGetPregnant(target: User, source: User): Promise<boolean> {
-		if (this.data.infertile === undefined) return true
+	roleCanGetPregnant(source: User): boolean {
+		console.log("roleCanGetPregnant")
+		if (this.data.infertileRoles === undefined) return true
+		console.log("this.data.infertileRoles")
+
+		let sourceMember = this.guild.members.resolve(source)
+		if (sourceMember === null) return false
+		console.log("sourceMember")
+
+		for (let i = 0; i < this.data.infertileRoles.length; i++) {
+			console.log("i", i)
+			let roleId = this.data.infertileRoles[i]
+			console.log("roleId", roleId)
+			if (!roleId) break
+
+			console.log("sourceMember.roles.cache.has(roleId)", sourceMember.roles.cache.has(roleId))
+			if (sourceMember.roles.cache.has(roleId)) return false
+		}
+
+		return true
+	}
+
+	roleRelationCanGetPregnant(target: User, source: User): boolean {
+		if (this.data.infertileRoleRelationships === undefined) return true
 		
 		let targetMember = this.guild.members.resolve(target)
 		let sourceMember = this.guild.members.resolve(source)
 		
 		if (targetMember === null || sourceMember === null) return false
-		let q = Object.entries(this.data.infertile)
+		let q = Object.entries(this.data.infertileRoleRelationships)
 		for (let i = 0; i < q.length; i++) {
 			let entry = q[i]
 			if (!entry) break
 			let infertileFrom = entry[0]
 			let infertileTo = entry[1]
-
-			let infertileFromRole = await this.guild.roles.fetch(infertileFrom)
-			let infertileToRole = await this.guild.roles.fetch(infertileTo)
 
 			let targetIsInfertile = targetMember.roles.cache.has(infertileTo)
 			let sourceIsInfertile = sourceMember.roles.cache.has(infertileFrom)
@@ -40,6 +60,10 @@ export default class Pregnancy extends EntangledModule<PregnancyData> {
 		}
 
 		return true
+	}
+
+	canGetPregnant(target: User, source: User): boolean {
+		return this.roleCanGetPregnant(source) && this.roleRelationCanGetPregnant(target, source)
 	}
 
 	async giveBirth(user: Snowflake, context: Message) {
