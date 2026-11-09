@@ -147,6 +147,12 @@ export function ArgumentToOption(argument: CommandArgument): Option {
 		case "mention":
 		case "role":
 		case "user":
+			return {
+				type: ApplicationCommandOptionType.User,
+				name: argument.name,
+				description: argument.description,
+				required: argument.required
+			}
 		default:
 			throw "Not Implemented"
 	}
