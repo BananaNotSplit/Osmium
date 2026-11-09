@@ -75,7 +75,7 @@ async function main() {
 				],
 				accent_color: Colors.error
 			}],
-			flags: [ "IsComponentsV2" ]
+			flags: [ "IsComponentsV2", "SuppressNotifications" ]
 		})
 		console.group("Shutdown")
 		loader.cleanup(client)
@@ -99,7 +99,7 @@ async function main() {
 				],
 				accent_color: Colors.error
 			}],
-			flags: [ "IsComponentsV2" ]
+			flags: [ "IsComponentsV2", "SuppressNotifications" ]
 		})
 		console.group("Shutdown")
 		loader.cleanup(client)
@@ -193,7 +193,7 @@ async function main() {
 				],
 				accent_color: Colors.success
 			}],
-			flags: [ "IsComponentsV2" ]
+			flags: [ "IsComponentsV2", "SuppressNotifications" ]
 		})
 	})
 
