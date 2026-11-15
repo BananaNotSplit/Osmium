@@ -6,7 +6,6 @@ interface CurrencyData {
 	balance: {[ id: Snowflake ]: number}
 	defaultBalance: number
 
-	sign: string
 	name: string | {plural: string, singular: string}
 }
 
@@ -49,7 +48,6 @@ export default class Currency extends EntangledModule<CurrencyData> {
 		return {
 			balance: {},
 			defaultBalance: 100,
-			sign: "$",
 			name: {plural: "dollars", singular: "dollar"}
 		}
 	}
@@ -79,7 +77,7 @@ export default class Currency extends EntangledModule<CurrencyData> {
 		let target = _target ?? interaction.user
 		let balance = this.getBalance(target.id)
 		interaction.reply({
-			content: `Balance of <@${target.id}>: ${balance}${this.data.sign}`,
+			content: `Balance of <@${target.id}>: ${balance} ${this.currencyName(balance !== 1)}`,
 			flags: [ "SuppressNotifications" ]
 		})
 	}
@@ -87,12 +85,12 @@ export default class Currency extends EntangledModule<CurrencyData> {
 	async handleCoinflip(interaction: ChatInputCommandInteraction, wager: number) {
 		if (Math.random() >= 0.5) {
 			await interaction.reply({
-				content: `You lost the coinflip of ${wager}${this.data.sign} 3:`
+				content: `You lost the coinflip of ${wager} ${this.currencyName(wager !== 1)} 3:`
 			})
 			this.modifyBalance(interaction.user.id, -wager)
 		} else {
 			await interaction.reply({
-				content: `You won the coinflip of ${wager}${this.data.sign} :3`
+				content: `You won the coinflip of ${wager} ${this.currencyName(wager !== 1)} :3`
 			})
 			this.modifyBalance(interaction.user.id, wager)
 		}
